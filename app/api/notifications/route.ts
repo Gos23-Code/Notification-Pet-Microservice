@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/infrastructure/database/supabase/client';
 import { NotificationRepository } from '@/infrastructure/database/supabase/Notification.Repository';
 import { SendNotificationUseCase } from '@/application/use-cases/SendNotification.Use-Case';
 import { NotificationType } from '@/domain/enums/NotificationType';
 import { NotificationFiltersDTO } from '@/application/dtos/NotificationDTO';
+import { ListNotificationsUseCase } from '@/application/use-cases/ListNotification.Use-Case';
 
 const repository = new NotificationRepository();
 
@@ -45,3 +45,40 @@ export async function POST(request: NextRequest) {
   }
 }
 
+// ============================================
+// GET: Listar notificaciones por usuario (listByUser)
+// ============================================
+export async function GET(request: NextRequest) {
+  try {
+    const searchParams = request.nextUrl.searchParams;
+    const userId = searchParams.get('userId');
+
+    if (!userId) {
+      return NextResponse.json(
+        { error: 'User ID is required' },
+        { status: 400 }
+      );
+    }
+
+    const filters: NotificationFiltersDTO = {
+      type: searchParams.get('type') as NotificationType | undefined,
+      read: searchParams.get('read') === 'true' ? true : searchParams.get('read') === 'false' ? false : undefined,
+      startDate: searchParams.get('startDate') ? new Date(searchParams.get('startDate')!) : undefined,
+      endDate: searchParams.get('endDate') ? new Date(searchParams.get('endDate')!) : undefined,
+      limit: searchParams.get('limit') ? parseInt(searchParams.get('limit')!) : undefined,
+      page: searchParams.get('page') ? parseInt(searchParams.get('page')!) : 1
+    };
+
+    const listUseCase = new ListNotificationsUseCase(repository);
+    const notifications = await listUseCase.execute(userId, filters);
+
+    return NextResponse.json({
+      success: true,
+      count: notifications.length,
+      notifications
+    });
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Internal server error';
+    return NextResponse.json({ error: errorMessage }, { status: 500 });
+  }
+}
