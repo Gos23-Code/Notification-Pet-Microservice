@@ -90,6 +90,11 @@ export class NotificationRepository implements INotificationRepository {
       throw new Error(`Error fetching notifications: ${error.message}`);
     }
 
+    // ✅ Fix: Asegurar que data sea siempre un array
+    if (!data || !Array.isArray(data)) {
+      return [];
+    }
+
     return data.map(this.mapToEntity);
   }
 
@@ -127,6 +132,17 @@ export class NotificationRepository implements INotificationRepository {
     }
 
     return this.mapToEntity(data);
+  }
+
+  async delete(id: string): Promise<void> {
+    const { error } = await supabase
+      .from('notifications')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      throw new Error(`Error deleting notification: ${error.message}`);
+    }
   }
 
   private mapToEntity(data: SupabaseNotificationResponse): Notification {
