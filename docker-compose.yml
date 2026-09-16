@@ -1,0 +1,18 @@
+services:
+  notification-microservice:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3002:3002"
+    env_file:
+      - .env.local
+    # Dentro del contenedor no existe la sesión de `gcloud auth
+    # application-default login` del host, así que Pub/Sub necesita una
+    # service account. Descarga su JSON, ponlo en ./gcp/service-account.json
+    # (esa carpeta ya está en .gitignore) y descomenta estas dos líneas:
+    # environment:
+    #   - GOOGLE_APPLICATION_CREDENTIALS=/app/gcp/service-account.json
+    # volumes:
+    #   - ./gcp/service-account.json:/app/gcp/service-account.json:ro
+    restart: unless-stopped
